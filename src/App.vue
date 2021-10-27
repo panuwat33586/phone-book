@@ -33,7 +33,10 @@
             </div>
             <div class="col-auto py-2">
               <button @click="triggerFavorite" class="btn btn-link">
-                <i :class="`bi ${isFavorite ? 'bi-star-fill' : 'bi-star'}`" :style="`color:${isFavorite?'yellow':''}`"></i>
+                <i
+                  :class="`bi ${isFavorite ? 'bi-star-fill' : 'bi-star'}`"
+                  :style="`color:${isFavorite ? 'yellow' : ''}`"
+                ></i>
               </button>
             </div>
           </div>
@@ -98,8 +101,10 @@
 </template>
 
 <script>
-import {v4} from 'uuid';
-const defaultProfilePic ='https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Cat_November_2010-1a.jpg/767px-Cat_November_2010-1a.jpg'
+import { v4 } from "uuid";
+const defaultProfilePic =
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Cat_November_2010-1a.jpg/767px-Cat_November_2010-1a.jpg";
+import service from "../services/firestore";
 export default {
   name: "App",
   data() {
@@ -110,38 +115,60 @@ export default {
           id: "1",
           name: "A",
           tel: "0909912870",
-          profilePic:defaultProfilePic,
+          profilePic: defaultProfilePic,
           isFavorite: false,
         },
       ],
       searchWords: "",
     };
   },
+  mounted(){
+    this.fetchContacts()
+  },
   methods: {
+    async fetchContacts(){
+      try{
+        const contacts = await service.contactService.get()
+        this.contactList= contacts
+      }catch(error){
+        console.log(error)
+      }
+    },
     triggerFavorite() {
       this.isFavorite = !this.isFavorite;
     },
-    addContact(){
-      const name = window.prompt('Contact name')
-      const tel = window.prompt('Tel No.')
-      let pic = window.prompt('Your profile picture')
-      const profilePic = pic || defaultProfilePic
-      const contact = {
-        id:v4(),
-        name,
-        tel,
-        profilePic,
-        isFavorite:false
+    async addContact() {
+      try {
+        const name = window.prompt("Contact name");
+        const tel = window.prompt("Tel No.");
+        let pic = window.prompt("Your profile picture");
+        const profilePic = pic || defaultProfilePic;
+        const id = v4();
+        const contact = {
+          id,
+          name,
+          tel,
+          profilePic,
+          isFavorite: false,
+        };
+        this.contactList.push(contact);
+
+        //add data to firebase
+        await service.contactService.set(id, contact);
+      } catch (error) {
+        console.log(error);
       }
-      this.contactList.push(contact)
     },
-    modifyFavoriteItem(itemId) {
+    async modifyFavoriteItem(itemId) {
+      let modifyContact
       this.contactList = this.contactList.map((contact) => {
         if (contact.id === itemId) {
           contact.isFavorite = !contact.isFavorite;
+          modifyContact = contact
         }
         return contact;
       });
+      await  service.contactService.update(itemId,modifyContact)
     },
     searchContact() {
       const searchInput = document.getElementById("search-input");
@@ -152,12 +179,19 @@ export default {
         this.searchWords = "";
       }
     },
-    deleteContact(itemId) {
+    async deleteContact(itemId) {
       const result = window.confirm("Do you want to delete this contact");
-      if (result) {
-        this.contactList = this.contactList.filter((contact) => {
-          return contact.id !== itemId;
-        });
+      try {
+        if (result) {
+          this.contactList = this.contactList.filter((contact) => {
+            return contact.id !== itemId;
+          });
+
+          // remove data from database
+          await service.contactService.remove(itemId);
+        }
+      } catch (error) {
+        console.log(error)
       }
     },
     filterContact(contactList) {
