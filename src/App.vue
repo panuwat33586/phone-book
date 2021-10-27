@@ -5,12 +5,12 @@
         <div class="card-header">
           <div class="row">
             <div class="col-4 text-start py-2">
-              <h5 class="card-title">{{ selectedMode }}</h5>
+              <h5 class="card-title">Contact</h5>
             </div>
             <div class="col py-1">
               <div class="input-group" style="max-width: 350px">
                 <input
-                  @change="(e)=>inputSearch(e)"
+                  @change="(e) => inputSearch(e)"
                   id="search-input"
                   type="text"
                   class="form-control"
@@ -27,70 +27,67 @@
               </div>
             </div>
             <div class="col-auto py-2">
-              <button class="btn btn-link">
+              <button @click="addContact" class="btn btn-link">
                 <i class="bi bi-person-plus"></i>
+              </button>
+            </div>
+            <div class="col-auto py-2">
+              <button @click="triggerFavorite" class="btn btn-link">
+                <i :class="`bi ${isFavorite ? 'bi-star-fill' : 'bi-star'}`" :style="`color:${isFavorite?'yellow':''}`"></i>
               </button>
             </div>
           </div>
         </div>
         <div class="card-body">
           <div class="h-100">
-            <template v-if="selectedMode === 'favourites'">
-              <ul class="list-group list-group-flush">
-                <li class="list-group-item">An item</li>
-                <li class="list-group-item">A second item</li>
-                <li class="list-group-item">A third item</li>
-                <li class="list-group-item">A fourth item</li>
-                <li class="list-group-item">And a fifth one</li>
-              </ul>
-            </template>
-
-            <template v-if="selectedMode === 'contact'">
-              <ul class="list-group list-group-flush">
-                <li
-                  class="list-group-item"
-                  v-for="(contact, $contactIndex) in displayContactList"
-                >
-                  <div class="row">
-                    <div class="col-4 col-md-2 text-start">
-                      <img
-                        :src="contact.profilePic"
-                        class="profile-image rounded-circle"
-                        alt="profile-image"
-                      />
-                    </div>
-                    <div class="col-8 col-md-10 align-items-center text-start">
-                      <p>{{ contact.name }}</p>
-                      <p>{{ contact.tel }}</p>
-                    </div>
+            <ul class="list-group list-group-flush">
+              <li
+                class="list-group-item"
+                v-for="(contact, $contactIndex) in displayContactList"
+              >
+                <div class="row">
+                  <div class="col-4 col-md-2 text-start">
+                    <img
+                      :src="contact.profilePic"
+                      class="profile-image rounded-circle"
+                      alt="profile-image"
+                    />
                   </div>
-                </li>
-              </ul>
-            </template>
+                  <div class="col-4 col-md-6 align-items-center text-start">
+                    <p>{{ contact.name }}</p>
+                    <p>{{ contact.tel }}</p>
+                  </div>
+                  <div class="col-2 col-md-2 align-items-center text-start">
+                    <button
+                      @click="() => modifyFavoriteItem(contact.id)"
+                      class="btn btn-warning"
+                    >
+                      <i
+                        :class="`bi ${
+                          contact.isFavorite ? 'bi-star-fill' : 'bi-star'
+                        }`"
+                      ></i>
+                    </button>
+                  </div>
+                  <div class="col-2 col-md-2 align-items-center text-start">
+                    <button
+                      @click="() => deleteContact(contact.id)"
+                      class="btn btn-danger"
+                    >
+                      <i class="bi bi-trash-fill"></i>
+                    </button>
+                  </div>
+                </div>
+              </li>
+            </ul>
           </div>
         </div>
         <div class="card-footer">
           <ul class="nav justify-content-center">
             <li class="nav-item">
-              <div
-                @click="selectMode('favourites')"
-                :class="`nav-link ${
-                  selectedMode === 'favourites' ? 'active' : ''
-                }`"
-              >
+              <div class="nav-link">
                 <i class="bi bi-star" style="display: block"></i>
                 <span> Favourites </span>
-              </div>
-            </li>
-            <li class="nav-item">
-              <div
-                @click="selectMode('contact')"
-                :class="`nav-link ${
-                  selectedMode === 'contact' ? 'active' : ''
-                }`"
-              >
-                <i class="bi bi-person-lines-fill" style="display: block"></i>
-                <span> Contact </span>
               </div>
             </li>
           </ul>
@@ -101,45 +98,77 @@
 </template>
 
 <script>
+import {v4} from 'uuid';
+const defaultProfilePic ='https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Cat_November_2010-1a.jpg/767px-Cat_November_2010-1a.jpg'
 export default {
   name: "App",
   data() {
     return {
-      selectedMode: "contact",
+      isFavorite: false,
       contactList: [
         {
+          id: "1",
           name: "A",
           tel: "0909912870",
-          profilePic:
-            "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Cat_November_2010-1a.jpg/767px-Cat_November_2010-1a.jpg",
+          profilePic:defaultProfilePic,
+          isFavorite: false,
         },
       ],
       searchWords: "",
     };
   },
   methods: {
-    selectMode(mode) {
-      this.selectedMode = mode;
+    triggerFavorite() {
+      this.isFavorite = !this.isFavorite;
     },
-    searchContact(){
-      const searchInput = document.getElementById('search-input')
-      this.searchWords = searchInput.value
+    addContact(){
+      const name = window.prompt('Contact name')
+      const tel = window.prompt('Tel No.')
+      let pic = window.prompt('Your profile picture')
+      const profilePic = pic || defaultProfilePic
+      const contact = {
+        id:v4(),
+        name,
+        tel,
+        profilePic,
+        isFavorite:false
+      }
+      this.contactList.push(contact)
     },
-    inputSearch(e){
-      console.log(e.target.value)
-      if(!e.target.value){
-        this.searchWords = ''
+    modifyFavoriteItem(itemId) {
+      this.contactList = this.contactList.map((contact) => {
+        if (contact.id === itemId) {
+          contact.isFavorite = !contact.isFavorite;
+        }
+        return contact;
+      });
+    },
+    searchContact() {
+      const searchInput = document.getElementById("search-input");
+      this.searchWords = searchInput.value;
+    },
+    inputSearch(e) {
+      if (!e.target.value) {
+        this.searchWords = "";
       }
     },
-    filterContact() {
-      const findItems = this.contactList.filter((contact) => {
+    deleteContact(itemId) {
+      const result = window.confirm("Do you want to delete this contact");
+      if (result) {
+        this.contactList = this.contactList.filter((contact) => {
+          return contact.id !== itemId;
+        });
+      }
+    },
+    filterContact(contactList) {
+      const findItems = contactList.filter((contact) => {
         const findKey = `${contact.name}-${contact.tel}`;
         const capitalizedFindKey = findKey.toUpperCase();
         const capitalizeSearchword = this.searchWords.toUpperCase();
         if (capitalizedFindKey.includes(capitalizeSearchword)) {
           return true;
-        }else{
-          return false
+        } else {
+          return false;
         }
       });
       return findItems;
@@ -147,13 +176,17 @@ export default {
   },
   computed: {
     displayContactList() {
-      if(this.searchWords.length>0){
-        console.log(this.searchWords)
-        const contacts =this.filterContact()
-        return contacts
-      }else{
-        console.log('empty')
-        return this.contactList
+      let contactList = [...this.contactList];
+      if (this.isFavorite) {
+        contactList = contactList.filter((contact) => contact.isFavorite);
+      }
+
+      if (this.searchWords.length > 0) {
+        const contacts = this.filterContact(contactList);
+        return contacts;
+      } else {
+        console.log(contactList);
+        return contactList;
       }
     },
   },
@@ -174,11 +207,6 @@ body {
 }
 html {
   height: 100%;
-}
-
-.nav-link {
-  color: black;
-  cursor: pointer;
 }
 
 .profile-image {
